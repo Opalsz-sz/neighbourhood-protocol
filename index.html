@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💌 for you</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&family=Dancing+Script:wght@700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script>
+/* =========================================================
+   ✏️  EDIT ALL THE TEXT HERE
+   ========================================================= */
+const CONFIG = {
+  name: "Eric",                       // his name
+  nickname: "For my neighbor (with potential)", // text on the envelope
+  floatingWords: ["my neighbor", "with potential"], // faint words drifting in the background
+  floatingEmoji: "🏡",                // emoji that falls on the envelope page
+  floatingEmojiCount: 10,             // how many of them
+
+  question: "Will you go on a date with me? 💖",
+  questionSub: "// this is not a drill",
+  yesText: "Yes 💖",
+  noText: "No",
+
+  // pop-up messages when he tries to press No ({name} = his name)
+  noMessages: [
+    "Nice try!", "sudo rejected", "Permission denied", "{name}, seriously?",
+    "rm -rf doubt", "404: Button not found", "Nope.exe has stopped",
+    "Segfault in feelings", "Access denied", "Error 403: Forbidden",
+    "Try again... or don't", "Wrong answer!"
+  ],
+
+  // ---- plan picker (shown after he says Yes) ----
+  planTitle: "Yay! Let's plan it 🥰",
+  planSub: "// pick one, then choose a day",
+  activities: [
+    { emoji: "🏸", label: "Sports" },
+    { emoji: "🎬", label: "Cinema" },
+    { emoji: "🍳", label: "Cooking date" },
+    { emoji: "🍷", label: "Dinner" },
+    { emoji: "🧸", label: "Snuggle" },
+    { emoji: "🍸", label: "Drinking, Flirting & Questionable Decisions" }
+  ],
+  dateLabel: "When are you free?",
+  defaultTime: "18:00",
+  planButton: "Lock it in 🔒",
+  needActivity: "Pick an activity first!",
+  needDate: "Pick a date too!",
+
+  // ---- Google Calendar ----
+  // AUTO MODE: paste your Apps Script web app URL here → the date goes
+  // straight into your calendar the moment he taps "Lock it in".
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbxH78LerjiY3Umh9pCRGMDZ5vO8ec61u938CKxtEvW6YS4Gm8BQYOMb0GQx_rArign0tQ/exec",
+  secret: "datewithopal",             // ← must match SECRET in Code.gs
+  sentText: "📬 Sent straight to my calendar!",
+
+  // BACKUP MODE (only used if appsScriptUrl is empty or sending fails):
+  // a button that opens Google Calendar for him, with you invited.
+  myEmail: "cmeangjunteak@gmail.com", // ← your Gmail
+  calendarButton: "📅 Send this date to my calendar",
+  calendarHint: "tap → Save → it lands in my calendar 💌",
+  eventTitle: "Date: {activity} with {name} 💘",
+  eventDetails: "Booked via the neighbour date website 🏡💌",
+  eventLocation: "",                  // optional, e.g. "Siam Paragon"
+  eventHours: 2,                      // how long the date lasts
+  timeZone: "Asia/Bangkok",
+
+  processingTitle: "Processing your answer...",
+  processingLog: [
+    "> Initializing love protocol...",
+    "[OK] Heart connection established",
+    "> Syncing heartbeats...",
+    "[OK] Butterflies deployed to stomach",
+    "> Running compatibility check...",
+    "[OK] Match confidence: 99.99%",
+    "Result: PERFECT MATCH 💖"
+  ],
+
+  finalTitle: "💘 Best Neighbour Ever!",
+  finalSub: 'date.status = "confirmed" ✅',
+  finalLines: [
+    'git commit -m "accidentally caught feelings for my neighbour" 💜',
+    "Warning: Excessive cuddling may occur 😻",
+    "No bugs can scare me when I'm with you 🐛💖",
+    "Chemistry detected. Further testing required 🧪",
+    'payment.status = "approved"; settlement.method = "kisses"; 💋'
+  ],
+  terminal: [
+    "$ ./date --target {name}",
+    "[OK] handshake established",
+    "[OK] flirting protocol activated",
+    "[OK] date.plan = \"{activity}\"",
+    "[OK] date.when = \"{date} @ {time}\"",
+    "[OK] love.deploy() — production ready",
+    "❤️ All systems operational. See you on our date!"
+  ]
+};
+/* ========================================================= */
+</script>
+<style>
+  :root{
+    --red:#e2414b; --red-dk:#b02a33; --blue:#3769a8; --orange:#f05a28;
+    --ink:#2d3a5a; --paper:#fffdf8; --cream:#fbefe7; --line:#e8ddd0;
+    --bg1:#f8f1e8; --bg2:#f3e4df;
+    --airmail:repeating-linear-gradient(-45deg,var(--red) 0 9px,#fff 9px 15px,var(--blue) 15px 24px,#fff 24px 30px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Mali',sans-serif; color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    overflow:hidden; -webkit-tap-highlight-color:transparent;
+  }
+  .layer{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .heart{position:absolute;opacity:.4;animation:fall linear infinite}
+  @keyframes fall{from{transform:translateY(-10vh) rotate(0)}to{transform:translateY(110vh) rotate(360deg)}}
+  .word{position:absolute;font-size:14px;color:var(--blue);opacity:.28;white-space:nowrap;animation:drift linear infinite}
+  @keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(130vw)}}
+  .house{position:absolute;top:0;opacity:.85;animation:houseFall linear infinite}
+  @keyframes houseFall{
+    0%{transform:translateY(-10vh) rotate(-12deg)}
+    25%{transform:translateY(20vh) rotate(12deg)}
+    50%{transform:translateY(50vh) rotate(-12deg)}
+    75%{transform:translateY(80vh) rotate(12deg)}
+    100%{transform:translateY(110vh) rotate(-12deg)}}
+  #houses{transition:opacity .8s}
+  #houses.gone{opacity:0}
+
+  #sound{position:fixed;top:14px;right:14px;z-index:50;width:42px;height:42px;border-radius:50%;
+    border:3px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--airmail) border-box;
+    box-shadow:0 4px 12px rgba(45,58,90,.15);font-size:17px;cursor:pointer}
+
+  .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+    transition:opacity .6s}
+  .hidden{opacity:0;pointer-events:none}
+  svg{display:block}
+
+  /* airmail frame, reused everywhere */
+  .airmail{border:7px solid transparent;
+    background:linear-gradient(var(--fill,var(--paper)),var(--fill,var(--paper))) padding-box,var(--airmail) border-box}
+
+  /* ============ 1. closed envelope ============ */
+  .envelope{position:relative;width:300px;height:210px;cursor:pointer;border-radius:6px;--fill:var(--cream);
+    box-shadow:0 16px 34px rgba(45,58,90,.16);animation:bob 2.8s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-8px) rotate(-1deg)}}
+  .envelope.open{animation:none}
+  .env-letter{position:absolute;left:9%;right:9%;top:10px;height:82%;z-index:1;border-radius:6px;
+    background:repeating-linear-gradient(var(--paper) 0 17px,var(--line) 17px 18px);
+    box-shadow:0 -2px 8px rgba(0,0,0,.08);transition:transform .8s cubic-bezier(.3,.7,.3,1) .55s}
+  .env-letter svg{width:26px;margin:10px;fill:var(--red)}
+  .env-pocket{position:absolute;inset:0;z-index:2;background:var(--cream);border-radius:2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px}
+  .env-pocket svg.lines{position:absolute;inset:0;width:100%;height:100%}
+  .env-flap{position:absolute;left:0;right:0;top:0;height:58%;z-index:4;transform-origin:top;
+    transition:transform .6s ease .15s, z-index 0s .45s}
+  .env-flap svg{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(120,80,60,.12))}
+  .sticker{position:absolute;top:58%;left:50%;width:42px;margin:-24px 0 0 -21px;z-index:5;
+    filter:drop-shadow(0 2px 2px rgba(120,40,20,.3));transition:transform .4s, opacity .4s}
+  .sticker svg{fill:var(--orange)}
+  .env-text{position:relative;z-index:3;text-align:center}
+  .env-to{font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--blue);letter-spacing:.3px}
+  .env-name{font-family:'Dancing Script',cursive;font-size:32px;line-height:1;color:var(--red)}
+  .tap{margin-top:26px;font-size:13px;color:var(--blue);opacity:.7}
+  .envelope.open .sticker{transform:translate(30px,-40px) rotate(35deg);opacity:0}
+  .envelope.open .env-flap{transform:rotateX(180deg);z-index:0}
+  .envelope.open .env-letter{transform:translateY(-120px)}
+
+  /* ============ 2. question: letter pulled out of envelope ============ */
+  .q-scene{position:relative;width:min(90vw,360px)}
+  .q-letter{position:relative;z-index:1;margin:0 18px;border-radius:16px 16px 0 0;padding:22px 18px 96px;text-align:center;
+    background:repeating-linear-gradient(var(--paper) 0 31px,var(--line) 31px 32px);
+    box-shadow:0 -4px 18px rgba(45,58,90,.1)}
+  #s-q:not(.hidden) .q-letter{animation:rise .9s cubic-bezier(.3,.7,.3,1)}
+  @keyframes rise{from{transform:translateY(90px)}to{transform:none}}
+  .q-heart{width:52px;margin:0 auto 6px}
+  .q-heart svg{fill:url(#gloss)}
+  .q-letter h1{font-size:21px;color:var(--red);margin-bottom:4px;line-height:1.35}
+  .q-letter .sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);opacity:.7;margin-bottom:12px}
+  .q-pocket{position:relative;z-index:2;height:130px;margin-top:-84px;border-radius:4px;--fill:var(--cream);
+    box-shadow:0 14px 30px rgba(45,58,90,.16)}
+  .q-pocket svg{position:absolute;inset:0;width:100%;height:100%}
+
+  .btns{display:flex;gap:14px;justify-content:center;align-items:center;min-height:70px}
+  button{font-family:inherit;cursor:pointer;border:none}
+  #yes,#lockBtn{background:var(--red);color:#fff;font-weight:700;font-size:16px;padding:10px 28px;border-radius:999px;
+    box-shadow:0 4px 0 var(--red-dk),0 8px 18px rgba(226,65,75,.3);transition:transform .25s}
+  #no{background:#fff;color:var(--blue);border:2px solid var(--blue);font-size:14px;font-weight:700;
+    padding:7px 22px;border-radius:999px;transition:transform .2s}
+  #no.flying{position:fixed;z-index:30;transition:left .25s,top .25s,transform .25s}
+  .tip{position:fixed;z-index:31;background:#fff;color:var(--ink);font-size:12px;font-weight:700;
+    padding:5px 11px;border-radius:999px;border:1.5px dashed var(--red);box-shadow:0 4px 12px rgba(0,0,0,.08);
+    pointer-events:none;animation:tipup 1.4s forwards;white-space:nowrap}
+  @keyframes tipup{0%{opacity:0;transform:translate(-50%,0)}15%{opacity:1;transform:translate(-50%,-6px)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
+
+  /* ============ shared airmail card + stamp ============ */
+  .card{position:relative;width:min(90vw,380px);max-height:92vh;overflow:auto;border-radius:14px;
+    padding:20px 16px;text-align:center;box-shadow:0 14px 34px rgba(45,58,90,.16)}
+  .card h1,.card h2{color:var(--red);font-size:21px;margin:0 44px 2px}
+  .card .sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);opacity:.75;margin-bottom:16px}
+  .stamp{position:absolute;top:8px;right:8px;width:38px;height:46px;transform:rotate(7deg);
+    background:radial-gradient(circle,transparent 2px,#fff 2.5px) -3px -3px/7px 7px;padding:4px}
+  .stamp div{width:100%;height:100%;background:#fde7d9;border:1.5px solid var(--red);display:flex;
+    align-items:center;justify-content:center;font-size:18px}
+
+  /* ============ plan ============ */
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .act{background:#fff;border:2px solid var(--line);border-radius:12px;padding:9px 6px;cursor:pointer;
+    font-weight:700;font-size:14px;transition:.2s;color:var(--ink)}
+  .act:last-child:nth-child(odd){grid-column:1 / -1}
+  .act .e{display:block;font-size:26px;margin-bottom:2px}
+  .act.sel{border-color:var(--red);background:#fff4ef;color:var(--red);transform:translateY(-3px) rotate(-1deg);
+    box-shadow:0 6px 14px rgba(226,65,75,.2)}
+  .when{font-weight:700;font-size:15px;color:var(--blue);margin-bottom:8px}
+  .row{display:flex;gap:8px;margin-bottom:10px}
+  .row:last-of-type{margin-bottom:18px}
+  .row input,.row select{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:14px;padding:10px 6px;
+    border-radius:10px;border:2px solid var(--line);color:var(--ink);background:#fff;text-align:center}
+  .row select{-webkit-appearance:none;appearance:none;text-align-last:center}
+  .cal{background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px 6px;margin-bottom:10px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .cal-title{font-weight:700;color:var(--ink);font-size:15px}
+  .cal-nav{width:32px;height:32px;border-radius:50%;background:#f5f8fc;color:var(--blue);font-size:20px;line-height:1;font-weight:700}
+  .cal-nav:disabled{opacity:.25;cursor:default}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  #calWeek div{font-size:11px;font-weight:700;color:var(--blue);opacity:.7;padding:2px 0}
+  .day{font-family:'JetBrains Mono',monospace;font-size:13px;height:34px;max-width:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);background:none;transition:.15s;margin:auto;width:100%}
+  .day:hover:not(.off){background:#fff0ea}
+  .day.today{box-shadow:inset 0 0 0 1.5px var(--blue)}
+  .day.off{color:#c9c2b8;cursor:default;text-decoration:line-through;text-decoration-color:rgba(0,0,0,.15)}
+  .day.sel,.day.sel:hover{background:var(--red);color:#fff;font-weight:700;box-shadow:0 3px 8px rgba(226,65,75,.35)}
+  .day.blank{visibility:hidden}
+  .row input:focus,.row select:focus{outline:none;border-color:var(--blue)}
+  .shake{animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* ============ processing ============ */
+  .bar{height:18px;background:#f1e8dd;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;width:0;border-radius:999px;transition:width .2s;
+    background:var(--airmail);background-size:42.43px 42.43px;animation:slide .8s linear infinite}
+  @keyframes slide{to{background-position:42.43px 0}}
+  .pct{text-align:center;font-weight:700;margin:12px 0;color:var(--blue)}
+  .log{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);line-height:1.7;min-height:120px;text-align:left}
+  .log .ok{color:#2f8a4a}.log .res{color:var(--red);font-weight:700}
+
+  /* ============ final ============ */
+  .summary{border:2px dashed var(--blue);background:#f5f8fc;border-radius:12px;padding:12px;margin-bottom:12px;
+    font-size:15px;line-height:1.8;color:var(--ink);font-weight:700}
+  .gcal{display:inline-block;background:#fff;color:var(--blue);border:2px solid var(--blue);border-radius:999px;
+    padding:10px 20px;font-weight:700;font-size:15px;text-decoration:none;box-shadow:0 4px 0 #2a5288;
+    transition:transform .15s;animation:pulse 1.8s ease-in-out infinite}
+  .gcal:active{transform:translateY(3px);box-shadow:0 1px 0 #2a5288}
+  @keyframes pulse{50%{transform:scale(1.04)}}
+  .sent{display:none;font-weight:700;color:#2f8a4a;background:#effaf2;border:1.5px dashed #2f8a4a;border-radius:999px;
+    padding:8px 14px;margin-bottom:12px;font-size:14px}
+  .gcal-hint{font-size:12px;color:var(--blue);opacity:.7;margin:8px 0 12px}
+  .line{border-bottom:1.5px dashed var(--line);padding:10px 4px;font-size:13.5px;color:var(--ink);
+    opacity:0;transform:translateY(8px);transition:.5s}
+  .line.show{opacity:1;transform:none}
+  .term{background:#1f2a44;color:#dbe6ff;border-radius:10px;padding:12px;text-align:left;margin-top:14px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;min-height:130px}
+  .term .ok{color:#7ee2a0}.term .end{color:#ffb3a7}
+  .confetti{position:fixed;width:8px;height:8px;z-index:60;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- shared SVG bits -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5a6e"/><stop offset=".55" stop-color="#d81e3a"/><stop offset="1" stop-color="#9c1027"/>
+    </linearGradient>
+    <symbol id="heartShape" viewBox="0 0 32 30"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></symbol>
+  </defs>
+</svg>
+
+<div class="layer" id="bg"></div>
+<div class="layer" id="houses"></div>
+<button id="sound" title="Sound">🔈</button>
+
+<!-- 1. Envelope -->
+<div class="screen" id="s-env">
+  <div class="envelope airmail" id="envelope">
+    <div class="env-letter"><svg viewBox="0 0 32 30"><use href="#heartShape"/></svg></div>
+    <div class="env-pocket">
+      <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 100 L50 52 L100 100" fill="none" stroke="#e3cfc2" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div class="env-text">
+        <div class="env-to" id="envTo"></div>
+        <div class="env-name" id="envName"></div>
+      </div>
+    </div>
+    <div class="env-flap">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 0 L100 0 L50 100 Z" fill="#f8e6dc" stroke="#e3cfc2" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+      </svg>
+    </div>
+    <div class="sticker"><svg viewBox="0 0 32 30"><use href="#heartShape"/></svg></div>
+  </div>
+  <div class="tap">click to open</div>
+</div>
+
+<!-- 2. Question -->
+<div class="screen hidden" id="s-q">
+  <div class="q-scene">
+    <div class="q-letter">
+      <div class="q-heart"><svg viewBox="0 0 32 30"><use href="#heartShape"/></svg></div>
+      <h1 id="qText"></h1>
+      <div class="sub" id="qSub"></div>
+      <div class="btns">
+        <button id="yes"></button>
+        <button id="no"></button>
+      </div>
+    </div>
+    <div class="q-pocket airmail">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 0 L50 55 L100 0 M0 100 L50 55 L100 100" fill="none" stroke="#e3cfc2" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 2.5 Plan -->
+<div class="screen hidden" id="s-plan">
+  <div class="card airmail">
+    <div class="stamp"><div>🏡</div></div>
+    <h1 id="pTitle"></h1>
+    <div class="sub" id="pSub"></div>
+    <div class="acts" id="acts"></div>
+    <div class="when" id="whenLabel"></div>
+    <div class="cal" id="cal">
+      <div class="cal-head">
+        <button type="button" class="cal-nav" id="calPrev">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button type="button" class="cal-nav" id="calNext">›</button>
+      </div>
+      <div class="cal-grid" id="calWeek"></div>
+      <div class="cal-grid" id="calDays"></div>
+    </div>
+    <div class="row">
+      <input type="time" id="pTime">
+    </div>
+    <button id="lockBtn"></button>
+  </div>
+</div>
+
+<!-- 3. Processing -->
+<div class="screen hidden" id="s-proc">
+  <div class="card airmail">
+    <h2 id="procTitle" style="margin:0 0 16px"></h2>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="pct" id="pct">0%</div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- 4. Final -->
+<div class="screen hidden" id="s-final">
+  <div class="card airmail">
+    <div class="stamp"><div>💌</div></div>
+    <h1 id="fTitle"></h1>
+    <div class="sub" id="fSub"></div>
+    <div class="summary" id="summary"></div>
+    <div class="sent" id="sent"></div>
+    <a class="gcal" id="gcal" target="_blank" rel="noopener"></a>
+    <div class="gcal-hint" id="gcalHint"></div>
+    <div id="lines"></div>
+    <div class="term" id="term"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const plan = { activity: "", date: "", time: "" };
+const fill = s => s.replaceAll("{name}", CONFIG.name)
+  .replaceAll("{activity}", plan.activity).replaceAll("{date}", plan.date).replaceAll("{time}", plan.time);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- fill text from CONFIG ---------- */
+$("envTo").textContent = CONFIG.nickname;
+$("envName").textContent = CONFIG.name;
+$("qText").textContent = fill(CONFIG.question);
+$("qSub").textContent = CONFIG.questionSub;
+$("yes").textContent = CONFIG.yesText;
+$("no").textContent = CONFIG.noText;
+$("procTitle").textContent = CONFIG.processingTitle;
+$("fTitle").textContent = fill(CONFIG.finalTitle);
+$("fSub").textContent = CONFIG.finalSub;
+
+/* ---------- background ---------- */
+const bg = $("bg");
+for (let i = 0; i < 28; i++) {
+  const h = document.createElement("div");
+  h.className = "heart"; h.textContent = "♥";
+  h.style.color = ["#e2414b", "#3769a8", "#f05a28"][i % 3];
+  h.style.left = Math.random()*100 + "vw";
+  h.style.fontSize = 10 + Math.random()*16 + "px";
+  h.style.animationDuration = 7 + Math.random()*8 + "s";
+  h.style.animationDelay = -Math.random()*15 + "s";
+  bg.appendChild(h);
+}
+CONFIG.floatingWords.forEach((w, i) => {
+  for (let k = 0; k < 2; k++) {
+    const el = document.createElement("div");
+    el.className = "word"; el.textContent = w;
+    el.style.top = 15 + Math.random()*70 + "vh";
+    el.style.animationDuration = 18 + Math.random()*10 + "s";
+    el.style.animationDelay = -Math.random()*20 + "s";
+    bg.appendChild(el);
+  }
+});
+// houses fall like the hearts, spread evenly across the screen
+const n = CONFIG.floatingEmojiCount;
+const order = [...Array(n).keys()].sort(() => Math.random() - .5); // shuffle so they don't fall in a diagonal line
+for (let i = 0; i < n; i++) {
+  const c = document.createElement("div");
+  c.className = "house";
+  c.textContent = CONFIG.floatingEmoji;
+  c.style.left = `calc(${(i + .5) / n * 100}vw - 14px)`;
+  c.style.fontSize = 22 + Math.random()*10 + "px";
+  const dur = 10 + Math.random()*3;
+  c.style.animationDuration = dur + "s";
+  c.style.animationDelay = -(order[i] / n) * dur + "s";
+  $("houses").appendChild(c);
+}
+
+/* ---------- switch screens ---------- */
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+  $(id).classList.remove("hidden");
+}
+
+/* ---------- 1. open envelope ---------- */
+$("envelope").onclick = async () => {
+  $("envelope").classList.add("open");
+  $("houses").classList.add("gone");
+  blip(520); setTimeout(() => blip(660), 450); setTimeout(() => blip(880), 900);
+  await sleep(1700);
+  show("s-q");
+};
+
+/* ---------- 2. runaway No button ---------- */
+const no = $("no"), yes = $("yes");
+let tries = 0, msgIndex = 0;
+
+function tip(text, x, y) {
+  const t = document.createElement("div");
+  t.className = "tip"; t.textContent = fill(text);
+  t.style.left = x + "px"; t.style.top = (y - 34) + "px";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1400);
+}
+
+function runAway(e) {
+  e.preventDefault(); e.stopPropagation();
+  tries++;
+  if (!no.classList.contains("flying")) {
+    const r = no.getBoundingClientRect();
+    // move the button to <body> so it's never hidden behind the letter / envelope
+    document.body.appendChild(no);
+    no.classList.add("flying");
+    no.style.left = r.left + "px"; no.style.top = r.top + "px";
+    void no.offsetWidth; // start the slide from where it was
+  }
+  const pad = 20;
+  const x = pad + Math.random() * (innerWidth - no.offsetWidth - pad*2);
+  const y = 70 + Math.random() * (innerHeight - no.offsetHeight - 140);
+  no.style.left = x + "px"; no.style.top = y + "px";
+  no.style.transform = `scale(${Math.max(1 - tries*0.06, 0.45)})`;
+  yes.style.transform = `scale(${Math.min(1 + tries*0.13, 2.1)})`;
+  setTimeout(() => tip(CONFIG.noMessages[msgIndex++ % CONFIG.noMessages.length],
+                       x + no.offsetWidth/2, y), 120);
+  blip(300 + Math.random()*200);
+}
+["mouseenter", "touchstart", "click"].forEach(ev => no.addEventListener(ev, runAway, {passive:false}));
+
+/* ---------- 3. Yes → processing ---------- */
+$("pTitle").textContent = CONFIG.planTitle;
+$("pSub").textContent = CONFIG.planSub;
+$("whenLabel").textContent = CONFIG.dateLabel;
+$("lockBtn").textContent = CONFIG.planButton;
+$("pTime").value = CONFIG.defaultTime;
+// ---- month calendar (Gregorian / A.D., from today onwards) ----
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WEEK = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const maxMonthsAhead = 12;            // how far ahead he can browse
+let view = new Date(today.getFullYear(), today.getMonth(), 1);
+let pickedDate = null;
+
+WEEK.forEach(w => { const d = document.createElement("div"); d.textContent = w; $("calWeek").appendChild(d); });
+
+function drawCalendar() {
+  const y = view.getFullYear(), m = view.getMonth();
+  $("calTitle").textContent = `${MONTHS[m]} ${y}`;
+  const monthsAhead = (y - today.getFullYear()) * 12 + (m - today.getMonth());
+  $("calPrev").disabled = monthsAhead <= 0;
+  $("calNext").disabled = monthsAhead >= maxMonthsAhead;
+  const box = $("calDays"); box.innerHTML = "";
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  for (let i = 0; i < firstDay; i++) { const b = document.createElement("div"); b.className = "day blank"; box.appendChild(b); }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const el = document.createElement("div");
+    el.className = "day"; el.textContent = d;
+    if (date < today) el.classList.add("off");
+    if (+date === +today) el.classList.add("today");
+    if (pickedDate && +date === +pickedDate) el.classList.add("sel");
+    if (date >= today) el.onclick = () => { pickedDate = date; drawCalendar(); blip(760); };
+    box.appendChild(el);
+  }
+}
+$("calPrev").onclick = () => { view.setMonth(view.getMonth() - 1); drawCalendar(); };
+$("calNext").onclick = () => { view.setMonth(view.getMonth() + 1); drawCalendar(); };
+drawCalendar();
+
+CONFIG.activities.forEach(a => {
+  const d = document.createElement("div");
+  d.className = "act";
+  d.innerHTML = `<span class="e">${a.emoji}</span>${a.label}`;
+  d.onclick = () => {
+    document.querySelectorAll(".act").forEach(x => x.classList.remove("sel"));
+    d.classList.add("sel");
+    plan.activity = a.emoji + " " + a.label;
+    blip(700);
+  };
+  $("acts").appendChild(d);
+});
+
+yes.onclick = () => {
+  if (no.isConnected) no.remove();
+  confetti();
+  show("s-plan");
+};
+
+$("lockBtn").onclick = () => {
+  const btn = $("lockBtn");
+  const nope = msg => {
+    btn.textContent = msg; btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
+    setTimeout(() => btn.textContent = CONFIG.planButton, 1400);
+  };
+  if (!plan.activity) return nope(CONFIG.needActivity);
+  if (!pickedDate) return nope(CONFIG.needDate);
+  plan.date = pickedDate.toLocaleDateString("en-US",
+    { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  plan.time = $("pTime").value || CONFIG.defaultTime;
+  runProcessing();
+};
+
+let sendPromise = Promise.resolve(false);
+async function runProcessing() {
+  sendPromise = sendToCalendar();
+  show("s-proc");
+  const log = $("log"), lines = CONFIG.processingLog;
+  for (let p = 0; p <= 100; p++) {
+    $("barFill").style.width = p + "%";
+    $("pct").textContent = p + "%";
+    const shouldHave = Math.floor(p / 100 * (lines.length - 1)) + 1;
+    while (log.children.length < Math.min(shouldHave, lines.length)) {
+      const t = lines[log.children.length];
+      const d = document.createElement("div");
+      d.textContent = t;
+      if (t.startsWith("[OK]")) d.className = "ok";
+      if (t.startsWith("Result")) d.className = "res";
+      log.appendChild(d);
+      blip(880, .04);
+    }
+    await sleep(40);
+  }
+  await sleep(900);
+  finale();
+};
+
+/* ---------- 4. finale ---------- */
+async function finale() {
+  show("s-final");
+  $("summary").innerHTML = `${plan.activity}<br>📅 ${plan.date}<br>⏰ ${plan.time}`;
+  $("gcal").href = calendarLink();
+  $("gcal").textContent = CONFIG.calendarButton;
+  $("gcalHint").textContent = CONFIG.calendarHint;
+  const autoOk = await Promise.race([sendPromise, sleep(4000).then(() => false)]);
+  if (autoOk) {
+    $("sent").textContent = CONFIG.sentText;
+    $("sent").style.display = "inline-block";
+    $("gcal").style.display = "none";
+    $("gcalHint").style.display = "none";
+  }
+  confetti();
+  playSong();
+  const box = $("lines");
+  for (const l of CONFIG.finalLines) {
+    const d = document.createElement("div");
+    d.className = "line"; d.textContent = fill(l);
+    box.appendChild(d);
+    await sleep(80); d.classList.add("show");
+    await sleep(350);
+  }
+  const term = $("term");
+  for (const l of CONFIG.terminal) {
+    const d = document.createElement("div");
+    const text = fill(l);
+    if (text.startsWith("[OK]")) d.className = "ok";
+    if (text.startsWith("❤️")) d.className = "end";
+    term.appendChild(d);
+    for (const ch of text) { d.textContent += ch; await sleep(22); }
+    await sleep(200);
+  }
+}
+
+// AUTO: send the date to your Apps Script → it creates the event in your calendar
+async function sendToCalendar() {
+  if (!CONFIG.appsScriptUrl) return false;
+  const pad = n => String(n).padStart(2, "0");
+  const d = pickedDate;
+  const payload = {
+    secret: CONFIG.secret,
+    name: CONFIG.name,
+    title: fill(CONFIG.eventTitle),
+    details: fill(CONFIG.eventDetails) + `\n\n${plan.activity}\n📅 ${plan.date}\n⏰ ${plan.time}`,
+    location: CONFIG.eventLocation,
+    start: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${plan.time}`,
+    hours: CONFIG.eventHours,
+    when: `${plan.date} @ ${plan.time}`
+  };
+  try {
+    // text/plain + no-cors = no CORS preflight, works from GitHub Pages
+    await fetch(CONFIG.appsScriptUrl, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+    return true;
+  } catch (e) {
+    return false;   // offline etc. → the backup button is shown instead
+  }
+}
+
+// BACKUP: Google Calendar "add event" link, with you invited as a guest
+function calendarLink() {
+  const pad = n => String(n).padStart(2, "0");
+  const [hh, mm] = plan.time.split(":").map(Number);
+  const start = new Date(pickedDate); start.setHours(hh, mm, 0, 0);
+  const end = new Date(start.getTime() + CONFIG.eventHours * 3600000);
+  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: fill(CONFIG.eventTitle),
+    dates: `${fmt(start)}/${fmt(end)}`,
+    ctz: CONFIG.timeZone,
+    details: fill(CONFIG.eventDetails),
+    location: CONFIG.eventLocation,
+    add: CONFIG.myEmail
+  });
+  return "https://calendar.google.com/calendar/render?" + q.toString();
+}
+
+function confetti() {
+  const colors = ["#e2414b","#3769a8","#f05a28","#ffffff","#f4b860"];
+  for (let i = 0; i < 120; i++) {
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.background = colors[i % colors.length];
+    c.style.left = innerWidth/2 + "px"; c.style.top = innerHeight/3 + "px";
+    document.body.appendChild(c);
+    const dx = (Math.random()-.5) * innerWidth * 1.2;
+    const dy = Math.random() * innerHeight;
+    c.animate([{transform:"translate(0,0)",opacity:1},
+               {transform:`translate(${dx}px,${dy}px) rotate(${Math.random()*720}deg)`,opacity:0}],
+              {duration:1800 + Math.random()*1200, easing:"cubic-bezier(.2,.7,.4,1)"})
+     .onfinish = () => c.remove();
+  }
+}
+
+/* ---------- sound (no audio file needed) ---------- */
+let ctx = null, soundOn = false;
+$("sound").onclick = () => {
+  soundOn = !soundOn;
+  $("sound").textContent = soundOn ? "🔊" : "🔈";
+  if (soundOn && !ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (soundOn) blip(784);
+};
+function blip(freq, len = .12) {
+  if (!soundOn || !ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(.12, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + len);
+  o.connect(g).connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + len);
+}
+async function playSong() {
+  const notes = [523,659,784,1047,784,880,1047];
+  for (const n of notes) { blip(n, .3); await sleep(180); }
+}
+</script>
+</body>
+</html>
